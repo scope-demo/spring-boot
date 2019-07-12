@@ -19,7 +19,7 @@
 	</organization>
 	<properties>
 		<main.basedir>${basedir}/../..</main.basedir>
-		<disable.checks>false</disable.checks>
+		<disable.checks>true</disable.checks>
 		<java.version>1.8</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -496,7 +496,7 @@
 						<java.security.egd>file:/dev/./urandom</java.security.egd>
 						<java.awt.headless>true</java.awt.headless>
 					</systemPropertyVariables>
-					<argLine>-Xmx1024m</argLine>
+					<argLine>-Xmx1024m -javaagent:${settings.localRepository}/com/undefinedlabs/scope/scope-agent/${scope.agent.version}/scope-agent-${scope.agent.version}.jar</argLine>
 					<trimStackTrace>false</trimStackTrace>
 					<redirectTestOutputToFile>true</redirectTestOutputToFile>
 					<runOrder>alphabetical</runOrder>
