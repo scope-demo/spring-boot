@@ -15,7 +15,7 @@
 	<properties>
 		<main.basedir>${basedir}/../..</main.basedir>
 		<java.version>1.8</java.version>
-		<disable.checks>false</disable.checks>
+		<disable.checks>true</disable.checks>
 	</properties>
 	<modules>
 		<module>spring-boot-smoke-test-ant</module>

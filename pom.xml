@@ -29,7 +29,7 @@
 			</properties>
 			<build>
 				<plugins>
-					<plugin>
+					<!--<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-checkstyle-plugin</artifactId>
 						<version>3.0.0</version>
@@ -85,7 +85,7 @@
 								<inherited>false</inherited>
 							</execution>
 						</executions>
-					</plugin>
+					</plugin>-->
 					<plugin>
 						<groupId>io.spring.javaformat</groupId>
 						<artifactId>spring-javaformat-maven-plugin</artifactId>
@@ -222,7 +222,7 @@
 					<configuration>
 						<lifecycleMappingMetadata>
 							<pluginExecutions>
-								<pluginExecution>
+								<!--<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
 										<artifactId>maven-checkstyle-plugin</artifactId>
@@ -234,7 +234,7 @@
 									<action>
 										<ignore />
 									</action>
-								</pluginExecution>
+								</pluginExecution>-->
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
