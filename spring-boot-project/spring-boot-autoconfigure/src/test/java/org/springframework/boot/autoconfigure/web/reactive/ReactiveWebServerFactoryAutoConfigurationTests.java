@@ -16,6 +16,8 @@
 
 package org.springframework.boot.autoconfigure.web.reactive;
 
+import io.undertow.Undertow;
+import io.undertow.Undertow.Builder;
 import org.apache.catalina.Context;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.startup.Tomcat;
@@ -28,6 +30,8 @@ import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner;
 import org.springframework.boot.web.embedded.jetty.JettyReactiveWebServerFactory;
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
+import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
+import org.springframework.boot.web.embedded.netty.NettyServerCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatProtocolHandlerCustomizer;
@@ -48,6 +52,7 @@ import org.springframework.web.server.adapter.ForwardedHeaderTransformer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -90,7 +95,7 @@ class ReactiveWebServerFactoryAutoConfigurationTests {
 						TooManyHttpHandlers.class)
 				.run((context) -> assertThat(context.getStartupFailure())
 						.isInstanceOf(ApplicationContextException.class)
-						.hasMessageContaining("multiple HttpHandler beans : " + "httpHandler,additionalHttpHandler"));
+						.hasMessageContaining("multiple HttpHandler beans : httpHandler,additionalHttpHandler"));
 	}
 
 	@Test
@@ -223,15 +228,17 @@ class ReactiveWebServerFactoryAutoConfigurationTests {
 	}
 
 	@Test
-	void undertowDeploymentInfoCustomizerBeanIsAddedToFactory() {
-		new ReactiveWebApplicationContextRunner(AnnotationConfigReactiveWebApplicationContext::new)
+	void jettyServerCustomizerRegisteredAsBeanAndViaFactoryIsOnlyCalledOnce() {
+		new ReactiveWebApplicationContextRunner(AnnotationConfigReactiveWebServerApplicationContext::new)
 				.withConfiguration(AutoConfigurations.of(ReactiveWebServerFactoryAutoConfiguration.class))
-				.withClassLoader(new FilteredClassLoader(Tomcat.class, HttpServer.class, Server.class))
-				.withUserConfiguration(UndertowDeploymentInfoCustomizerConfiguration.class,
+				.withClassLoader(new FilteredClassLoader(Tomcat.class, HttpServer.class))
+				.withUserConfiguration(DoubleRegistrationJettyServerCustomizerConfiguration.class,
 						HttpHandlerConfiguration.class)
-				.run((context) -> {
-					UndertowReactiveWebServerFactory factory = context.getBean(UndertowReactiveWebServerFactory.class);
-					assertThat(factory.getDeploymentInfoCustomizers()).hasSize(1);
+				.withPropertyValues("server.port=0").run((context) -> {
+					JettyReactiveWebServerFactory factory = context.getBean(JettyReactiveWebServerFactory.class);
+					JettyServerCustomizer customizer = context.getBean("serverCustomizer", JettyServerCustomizer.class);
+					assertThat(factory.getServerCustomizers()).contains(customizer);
+					verify(customizer, times(1)).customize(any(Server.class));
 				});
 	}
 
@@ -244,6 +251,49 @@ class ReactiveWebServerFactoryAutoConfigurationTests {
 				.run((context) -> {
 					UndertowReactiveWebServerFactory factory = context.getBean(UndertowReactiveWebServerFactory.class);
 					assertThat(factory.getBuilderCustomizers()).hasSize(1);
+				});
+	}
+
+	@Test
+	void undertowBuilderCustomizerRegisteredAsBeanAndViaFactoryIsOnlyCalledOnce() {
+		new ReactiveWebApplicationContextRunner(AnnotationConfigReactiveWebServerApplicationContext::new)
+				.withConfiguration(AutoConfigurations.of(ReactiveWebServerFactoryAutoConfiguration.class))
+				.withClassLoader(new FilteredClassLoader(Tomcat.class, HttpServer.class, Server.class))
+				.withUserConfiguration(DoubleRegistrationUndertowBuilderCustomizerConfiguration.class,
+						HttpHandlerConfiguration.class)
+				.withPropertyValues("server.port: 0").run((context) -> {
+					UndertowReactiveWebServerFactory factory = context.getBean(UndertowReactiveWebServerFactory.class);
+					UndertowBuilderCustomizer customizer = context.getBean("builderCustomizer",
+							UndertowBuilderCustomizer.class);
+					assertThat(factory.getBuilderCustomizers()).contains(customizer);
+					verify(customizer, times(1)).customize(any(Builder.class));
+				});
+	}
+
+	@Test
+	void nettyServerCustomizerBeanIsAddedToFactory() {
+		new ReactiveWebApplicationContextRunner(AnnotationConfigReactiveWebApplicationContext::new)
+				.withConfiguration(AutoConfigurations.of(ReactiveWebServerFactoryAutoConfiguration.class))
+				.withClassLoader(new FilteredClassLoader(Tomcat.class, Server.class, Undertow.class))
+				.withUserConfiguration(NettyServerCustomizerConfiguration.class, HttpHandlerConfiguration.class)
+				.run((context) -> {
+					NettyReactiveWebServerFactory factory = context.getBean(NettyReactiveWebServerFactory.class);
+					assertThat(factory.getServerCustomizers()).hasSize(1);
+				});
+	}
+
+	@Test
+	void nettyServerCustomizerRegisteredAsBeanAndViaFactoryIsOnlyCalledOnce() {
+		new ReactiveWebApplicationContextRunner(AnnotationConfigReactiveWebServerApplicationContext::new)
+				.withConfiguration(AutoConfigurations.of(ReactiveWebServerFactoryAutoConfiguration.class))
+				.withClassLoader(new FilteredClassLoader(Tomcat.class, Server.class, Undertow.class))
+				.withUserConfiguration(DoubleRegistrationNettyServerCustomizerConfiguration.class,
+						HttpHandlerConfiguration.class)
+				.withPropertyValues("server.port: 0").run((context) -> {
+					NettyReactiveWebServerFactory factory = context.getBean(NettyReactiveWebServerFactory.class);
+					NettyServerCustomizer customizer = context.getBean("serverCustomizer", NettyServerCustomizer.class);
+					assertThat(factory.getServerCustomizers()).contains(customizer);
+					verify(customizer, times(1)).apply(any(HttpServer.class));
 				});
 	}
 
@@ -402,6 +452,23 @@ class ReactiveWebServerFactoryAutoConfigurationTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	static class DoubleRegistrationJettyServerCustomizerConfiguration {
+
+		private final JettyServerCustomizer customizer = mock(JettyServerCustomizer.class);
+
+		@Bean
+		JettyServerCustomizer serverCustomizer() {
+			return this.customizer;
+		}
+
+		@Bean
+		WebServerFactoryCustomizer<JettyReactiveWebServerFactory> jettyCustomizer() {
+			return (jetty) -> jetty.addServerCustomizers(this.customizer);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
 	static class UndertowBuilderCustomizerConfiguration {
 
 		@Bean
@@ -413,12 +480,60 @@ class ReactiveWebServerFactoryAutoConfigurationTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	static class DoubleRegistrationUndertowBuilderCustomizerConfiguration {
+
+		private final UndertowBuilderCustomizer customizer = mock(UndertowBuilderCustomizer.class);
+
+		@Bean
+		UndertowBuilderCustomizer builderCustomizer() {
+			return this.customizer;
+		}
+
+		@Bean
+		WebServerFactoryCustomizer<UndertowReactiveWebServerFactory> undertowCustomizer() {
+			return (undertow) -> undertow.addBuilderCustomizers(this.customizer);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
 	static class UndertowDeploymentInfoCustomizerConfiguration {
 
 		@Bean
 		UndertowDeploymentInfoCustomizer deploymentInfoCustomizer() {
 			return (deploymentInfo) -> {
 			};
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class NettyServerCustomizerConfiguration {
+
+		@Bean
+		NettyServerCustomizer serverCustomizer() {
+			return (server) -> server;
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class DoubleRegistrationNettyServerCustomizerConfiguration {
+
+		private final NettyServerCustomizer customizer = mock(NettyServerCustomizer.class);
+
+		DoubleRegistrationNettyServerCustomizerConfiguration() {
+			given(this.customizer.apply(any(HttpServer.class))).willAnswer((invocation) -> invocation.getArgument(0));
+		}
+
+		@Bean
+		NettyServerCustomizer serverCustomizer() {
+			return this.customizer;
+		}
+
+		@Bean
+		WebServerFactoryCustomizer<NettyReactiveWebServerFactory> nettyCustomizer() {
+			return (netty) -> netty.addServerCustomizers(this.customizer);
 		}
 
 	}

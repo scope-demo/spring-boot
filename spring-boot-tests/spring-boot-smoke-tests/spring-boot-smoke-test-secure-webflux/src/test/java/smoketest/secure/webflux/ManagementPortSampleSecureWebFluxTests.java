@@ -90,11 +90,17 @@ class ManagementPortSampleSecureWebFluxTests {
 	static class SecurityConfiguration {
 
 		@Bean
-		SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-			return http.authorizeExchange().matchers(EndpointRequest.to("health", "info")).permitAll()
-					.matchers(EndpointRequest.toAnyEndpoint().excluding(MappingsEndpoint.class)).hasRole("ACTUATOR")
-					.matchers(PathRequest.toStaticResources().atCommonLocations()).permitAll().pathMatchers("/login")
-					.permitAll().anyExchange().authenticated().and().httpBasic().and().build();
+		SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) throws Exception {
+			http.authorizeExchange((exchanges) -> {
+				exchanges.matchers(EndpointRequest.to("health", "info")).permitAll();
+				exchanges.matchers(EndpointRequest.toAnyEndpoint().excluding(MappingsEndpoint.class))
+						.hasRole("ACTUATOR");
+				exchanges.matchers(PathRequest.toStaticResources().atCommonLocations()).permitAll();
+				exchanges.pathMatchers("/login").permitAll();
+				exchanges.anyExchange().authenticated();
+			});
+			http.httpBasic();
+			return http.build();
 		}
 
 	}

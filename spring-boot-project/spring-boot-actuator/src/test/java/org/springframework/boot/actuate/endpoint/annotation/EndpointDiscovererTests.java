@@ -44,6 +44,8 @@ import org.springframework.boot.actuate.endpoint.invoke.ParameterValueMapper;
 import org.springframework.boot.actuate.endpoint.invoke.convert.ConversionServiceParameterValueMapper;
 import org.springframework.boot.actuate.endpoint.invoker.cache.CachingOperationInvoker;
 import org.springframework.boot.actuate.endpoint.invoker.cache.CachingOperationInvokerAdvisor;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.FixedValue;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -166,7 +168,7 @@ class EndpointDiscovererTests {
 	void getEndpointsWhenTtlSetByIdAndIdDoesNotMatchShouldNotCacheInvokeCalls() {
 		load(TestEndpointConfiguration.class, (context) -> {
 			TestEndpointDiscoverer discoverer = new TestEndpointDiscoverer(context,
-					(endpointId) -> (endpointId.equals("foo") ? 500L : 0L));
+					(endpointId) -> (endpointId.equals(EndpointId.of("foo")) ? 500L : 0L));
 			Map<EndpointId, TestExposableEndpoint> endpoints = mapEndpoints(discoverer.getEndpoints());
 			assertThat(endpoints).containsOnlyKeys(EndpointId.of("test"));
 			Map<Method, TestOperation> operations = mapOperations(endpoints.get(EndpointId.of("test")));
@@ -233,6 +235,15 @@ class EndpointDiscovererTests {
 					ReflectionUtils.findMethod(SubSpecializedTestEndpoint.class, "getSpecialOne", String.class));
 			assertThat(operations).containsKeys(ReflectionUtils.findMethod(SpecializedExtension.class, "getSpecial"));
 			assertThat(operations).hasSize(3);
+		});
+	}
+
+	@Test
+	void getEndpointsWhenHasProxiedEndpointShouldReturnEndpoint() {
+		load(ProxiedSpecializedEndpointsConfiguration.class, (context) -> {
+			SpecializedEndpointDiscoverer discoverer = new SpecializedEndpointDiscoverer(context);
+			Map<EndpointId, SpecializedExposableEndpoint> endpoints = mapEndpoints(discoverer.getEndpoints());
+			assertThat(endpoints).containsOnlyKeys(EndpointId.of("test"), EndpointId.of("specialized"));
 		});
 	}
 
@@ -328,6 +339,19 @@ class EndpointDiscovererTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
+	static class ProxiedSpecializedTestEndpointConfiguration {
+
+		@Bean
+		SpecializedExtension specializedExtension() {
+			Enhancer enhancer = new Enhancer();
+			enhancer.setSuperclass(SpecializedExtension.class);
+			enhancer.setCallback((FixedValue) () -> null);
+			return (SpecializedExtension) enhancer.create();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
 	static class TestEndpointConfiguration {
 
 		@Bean
@@ -384,6 +408,11 @@ class EndpointDiscovererTests {
 
 	@Import({ TestEndpoint.class, SubSpecializedTestEndpoint.class, SpecializedExtension.class })
 	static class SubSpecializedEndpointsConfiguration {
+
+	}
+
+	@Import({ TestEndpoint.class, SpecializedTestEndpoint.class, ProxiedSpecializedTestEndpointConfiguration.class })
+	static class ProxiedSpecializedEndpointsConfiguration {
 
 	}
 

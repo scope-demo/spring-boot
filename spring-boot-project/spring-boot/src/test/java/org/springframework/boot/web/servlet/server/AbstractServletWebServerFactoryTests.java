@@ -167,7 +167,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 	}
 
 	@Test
-	void startCalledTwice(CapturedOutput capturedOutput) throws Exception {
+	void startCalledTwice(CapturedOutput output) throws Exception {
 		AbstractServletWebServerFactory factory = getFactory();
 		this.webServer = factory.getWebServer(exampleServletRegistration());
 		this.webServer.start();
@@ -175,7 +175,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 		this.webServer.start();
 		assertThat(this.webServer.getPort()).isEqualTo(port);
 		assertThat(getResponse(getLocalUrl("/hello"))).isEqualTo("Hello World");
-		assertThat(capturedOutput).containsOnlyOnce("started on port");
+		assertThat(output).containsOnlyOnce("started on port");
 	}
 
 	@Test
@@ -264,12 +264,12 @@ public abstract class AbstractServletWebServerFactoryTests {
 	}
 
 	@Test
-	void contextPathIsLoggedOnStartup(CapturedOutput capturedOutput) {
+	void contextPathIsLoggedOnStartup(CapturedOutput output) {
 		AbstractServletWebServerFactory factory = getFactory();
 		factory.setContextPath("/custom");
 		this.webServer = factory.getWebServer(exampleServletRegistration());
 		this.webServer.start();
-		assertThat(capturedOutput).containsOnlyOnce("with context path '/custom'");
+		assertThat(output).containsOnlyOnce("with context path '/custom'");
 	}
 
 	@Test
@@ -779,7 +779,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 		AbstractServletWebServerFactory factory = getFactory();
 		this.webServer = factory.getWebServer();
 		Map<String, String> configuredMimeMappings = getActualMimeMappings();
-		Collection<MimeMappings.Mapping> expectedMimeMappings = getExpectedMimeMappings();
+		Collection<MimeMappings.Mapping> expectedMimeMappings = MimeMappings.DEFAULT.getAll();
 		configuredMimeMappings.forEach(
 				(key, value) -> assertThat(expectedMimeMappings).contains(new MimeMappings.Mapping(key, value)));
 		for (MimeMappings.Mapping mapping : expectedMimeMappings) {
@@ -1016,10 +1016,6 @@ public abstract class AbstractServletWebServerFactoryTests {
 
 	protected abstract Map<String, String> getActualMimeMappings();
 
-	protected Collection<MimeMappings.Mapping> getExpectedMimeMappings() {
-		return MimeMappings.DEFAULT.getAll();
-	}
-
 	protected abstract Charset getCharset(Locale locale);
 
 	private void addTestTxtFile(AbstractServletWebServerFactory factory) throws IOException {
@@ -1083,7 +1079,7 @@ public abstract class AbstractServletWebServerFactoryTests {
 			HttpComponentsClientHttpRequestFactory requestFactory, String... headers)
 			throws IOException, URISyntaxException {
 		ClientHttpRequest request = requestFactory.createRequest(new URI(url), method);
-		request.getHeaders().add("Cookie", "JSESSIONID=" + "123");
+		request.getHeaders().add("Cookie", "JSESSIONID=123");
 		for (String header : headers) {
 			String[] parts = header.split(":");
 			request.getHeaders().add(parts[0], parts[1]);

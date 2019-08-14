@@ -25,6 +25,7 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.LogoutConfigurer;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -62,15 +63,15 @@ public class SampleWebSecureApplication implements WebMvcConfigurer {
 
 		@Override
 		protected void configure(HttpSecurity http) throws Exception {
-			// @formatter:off
-			http.authorizeRequests()
-					.requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-					.anyRequest().fullyAuthenticated()
-					.and()
-				.formLogin().loginPage("/login").failureUrl("/login?error").permitAll()
-					.and()
-				.logout().permitAll();
-			// @formatter:on
+			http.authorizeRequests((requests) -> {
+				requests.requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll();
+				requests.anyRequest().fullyAuthenticated();
+			});
+			http.formLogin((form) -> {
+				form.loginPage("/login");
+				form.failureUrl("/login?error").permitAll();
+			});
+			http.logout(LogoutConfigurer::permitAll);
 		}
 
 	}

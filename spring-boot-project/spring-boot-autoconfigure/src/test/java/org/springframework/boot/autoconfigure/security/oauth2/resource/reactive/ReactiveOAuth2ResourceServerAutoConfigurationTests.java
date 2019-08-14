@@ -48,8 +48,7 @@ import org.springframework.security.oauth2.server.resource.BearerTokenAuthentica
 import org.springframework.security.oauth2.server.resource.authentication.JwtReactiveAuthenticationManager;
 import org.springframework.security.oauth2.server.resource.authentication.OAuth2IntrospectionAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.OAuth2IntrospectionReactiveAuthenticationManager;
-import org.springframework.security.oauth2.server.resource.introspection.OAuth2TokenIntrospectionClient;
-import org.springframework.security.oauth2.server.resource.introspection.ReactiveOAuth2TokenIntrospectionClient;
+import org.springframework.security.oauth2.server.resource.introspection.ReactiveOpaqueTokenIntrospector;
 import org.springframework.security.web.server.MatcherSecurityWebFilterChain;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
@@ -64,6 +63,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author Madhura Bhave
  * @author Artsiom Yudovin
+ * @author HaiTao Zhang
  */
 class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 
@@ -94,14 +94,49 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 	void autoConfigurationShouldConfigureResourceServerUsingOidcIssuerUri() throws IOException {
 		this.server = new MockWebServer();
 		this.server.start();
-		String issuer = this.server.url("").toString();
+		String path = "test";
+		String issuer = this.server.url(path).toString();
 		String cleanIssuerPath = cleanIssuerPath(issuer);
 		setupMockResponse(cleanIssuerPath);
+		this.contextRunner.withPropertyValues("spring.security.oauth2.resourceserver.jwt.issuer-uri=http://"
+				+ this.server.getHostName() + ":" + this.server.getPort() + "/" + path).run((context) -> {
+					assertThat(context).hasSingleBean(NimbusReactiveJwtDecoder.class);
+					assertFilterConfiguredWithJwtAuthenticationManager(context);
+					assertThat(context.containsBean("jwtDecoderByIssuerUri")).isTrue();
+				});
+		assertThat(this.server.getRequestCount()).isEqualTo(1);
+	}
+
+	@Test
+	void autoConfigurationShouldConfigureResourceServerUsingOidcRfc8414IssuerUri() throws Exception {
+		this.server = new MockWebServer();
+		this.server.start();
+		String issuer = this.server.url("").toString();
+		String cleanIssuerPath = cleanIssuerPath(issuer);
+		setupMockResponsesWithErrors(cleanIssuerPath, 1);
 		this.contextRunner.withPropertyValues("spring.security.oauth2.resourceserver.jwt.issuer-uri=http://"
 				+ this.server.getHostName() + ":" + this.server.getPort()).run((context) -> {
 					assertThat(context).hasSingleBean(NimbusReactiveJwtDecoder.class);
 					assertFilterConfiguredWithJwtAuthenticationManager(context);
+					assertThat(context.containsBean("jwtDecoderByIssuerUri")).isTrue();
 				});
+		assertThat(this.server.getRequestCount()).isEqualTo(2);
+	}
+
+	@Test
+	void autoConfigurationShouldConfigureResourceServerUsingOAuthIssuerUri() throws Exception {
+		this.server = new MockWebServer();
+		this.server.start();
+		String issuer = this.server.url("").toString();
+		String cleanIssuerPath = cleanIssuerPath(issuer);
+		setupMockResponsesWithErrors(cleanIssuerPath, 2);
+		this.contextRunner.withPropertyValues("spring.security.oauth2.resourceserver.jwt.issuer-uri=http://"
+				+ this.server.getHostName() + ":" + this.server.getPort()).run((context) -> {
+					assertThat(context).hasSingleBean(NimbusReactiveJwtDecoder.class);
+					assertFilterConfiguredWithJwtAuthenticationManager(context);
+					assertThat(context.containsBean("jwtDecoderByIssuerUri")).isTrue();
+				});
+		assertThat(this.server.getRequestCount()).isEqualTo(3);
 	}
 
 	@Test
@@ -216,17 +251,17 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 						"spring.security.oauth2.resourceserver.opaquetoken.client-id=my-client-id",
 						"spring.security.oauth2.resourceserver.opaquetoken.client-secret=my-client-secret")
 				.run((context) -> {
-					assertThat(context).hasSingleBean(ReactiveOAuth2TokenIntrospectionClient.class);
+					assertThat(context).hasSingleBean(ReactiveOpaqueTokenIntrospector.class);
 					assertFilterConfiguredWithOpaqueTokenAuthenticationManager(context);
 				});
 	}
 
 	@Test
-	void oAuth2TokenIntrospectionClientIsConditionalOnMissingBean() {
+	void opaqueTokenIntrospectorIsConditionalOnMissingBean() {
 		this.contextRunner
 				.withPropertyValues(
 						"spring.security.oauth2.resourceserver.opaquetoken.introspection-uri=https://check-token.com")
-				.withUserConfiguration(OAuth2TokenIntrospectionClientConfig.class)
+				.withUserConfiguration(OpaqueTokenIntrospectorConfig.class)
 				.run((this::assertFilterConfiguredWithOpaqueTokenAuthenticationManager));
 	}
 
@@ -250,7 +285,7 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 						"spring.security.oauth2.resourceserver.opaquetoken.introspection-uri=https://check-token.com",
 						"spring.security.oauth2.resourceserver.opaquetoken.client-id=my-client-id",
 						"spring.security.oauth2.resourceserver.opaquetoken.client-secret=my-client-secret")
-				.run((context) -> assertThat(context).doesNotHaveBean(OAuth2TokenIntrospectionClient.class));
+				.run((context) -> assertThat(context).doesNotHaveBean(ReactiveOpaqueTokenIntrospector.class));
 	}
 
 	@Test
@@ -322,6 +357,14 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 		this.server.enqueue(mockResponse);
 	}
 
+	private void setupMockResponsesWithErrors(String issuer, int errorResponseCount) throws JsonProcessingException {
+		for (int i = 0; i < errorResponseCount; i++) {
+			MockResponse emptyResponse = new MockResponse().setResponseCode(HttpStatus.NOT_FOUND.value());
+			this.server.enqueue(emptyResponse);
+		}
+		setupMockResponse(issuer);
+	}
+
 	private Map<String, Object> getResponse(String issuer) {
 		Map<String, Object> response = new HashMap<>();
 		response.put("authorization_endpoint", "https://example.com/o/oauth2/v2/auth");
@@ -362,11 +405,11 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 	}
 
 	@Configuration(proxyBeanMethods = false)
-	static class OAuth2TokenIntrospectionClientConfig {
+	static class OpaqueTokenIntrospectorConfig {
 
 		@Bean
-		ReactiveOAuth2TokenIntrospectionClient decoder() {
-			return mock(ReactiveOAuth2TokenIntrospectionClient.class);
+		ReactiveOpaqueTokenIntrospector decoder() {
+			return mock(ReactiveOpaqueTokenIntrospector.class);
 		}
 
 	}
@@ -375,9 +418,12 @@ class ReactiveOAuth2ResourceServerAutoConfigurationTests {
 	static class SecurityWebFilterChainConfig {
 
 		@Bean
-		SecurityWebFilterChain testSpringSecurityFilterChain(ServerHttpSecurity http) {
-			http.authorizeExchange().pathMatchers("/message/**").hasRole("ADMIN").anyExchange().authenticated().and()
-					.httpBasic();
+		SecurityWebFilterChain testSpringSecurityFilterChain(ServerHttpSecurity http) throws Exception {
+			http.authorizeExchange((exchanges) -> {
+				exchanges.pathMatchers("/message/**").hasRole("ADMIN");
+				exchanges.anyExchange().authenticated();
+			});
+			http.httpBasic();
 			return http.build();
 		}
 

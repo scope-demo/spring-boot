@@ -30,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity.OAuth2ResourceServerSpec;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders;
@@ -78,7 +79,7 @@ class ReactiveOAuth2ResourceServerJwkConfiguration {
 		@Bean
 		@Conditional(IssuerUriCondition.class)
 		ReactiveJwtDecoder jwtDecoderByIssuerUri() {
-			return ReactiveJwtDecoders.fromOidcIssuerLocation(this.properties.getIssuerUri());
+			return ReactiveJwtDecoders.fromIssuerLocation(this.properties.getIssuerUri());
 		}
 
 	}
@@ -90,9 +91,13 @@ class ReactiveOAuth2ResourceServerJwkConfiguration {
 		@Bean
 		@ConditionalOnBean(ReactiveJwtDecoder.class)
 		SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http, ReactiveJwtDecoder jwtDecoder) {
-			http.authorizeExchange().anyExchange().authenticated().and().oauth2ResourceServer().jwt()
-					.jwtDecoder(jwtDecoder);
+			http.authorizeExchange((exchanges) -> exchanges.anyExchange().authenticated());
+			http.oauth2ResourceServer((server) -> customDecoder(server, jwtDecoder));
 			return http.build();
+		}
+
+		private void customDecoder(OAuth2ResourceServerSpec server, ReactiveJwtDecoder decoder) {
+			server.jwt((jwt) -> jwt.jwtDecoder(decoder));
 		}
 
 	}
