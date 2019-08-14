@@ -103,6 +103,19 @@ class QuartzAutoConfigurationTests {
 	}
 
 	@Test
+	void withDataSourceAndInMemoryStoreDoesNotInitializeDataSource() {
+		this.contextRunner.withUserConfiguration(QuartzJobsConfiguration.class)
+				.withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class,
+						DataSourceTransactionManagerAutoConfiguration.class))
+				.withPropertyValues("spring.quartz.job-store-type=memory").run((context) -> {
+					JdbcTemplate jdbcTemplate = new JdbcTemplate(context.getBean("dataSource", DataSource.class));
+					assertThat(jdbcTemplate.queryForList("SHOW TABLES").stream()
+							.map((table) -> (String) table.get("TABLE_NAME")))
+									.noneMatch((name) -> name.startsWith("QRTZ"));
+				});
+	}
+
+	@Test
 	void withDataSourceNoTransactionManager() {
 		this.contextRunner.withUserConfiguration(QuartzJobsConfiguration.class)
 				.withConfiguration(AutoConfigurations.of(DataSourceAutoConfiguration.class))
@@ -154,7 +167,7 @@ class QuartzAutoConfigurationTests {
 	}
 
 	@Test
-	void withConfiguredJobAndTrigger(CapturedOutput capturedOutput) {
+	void withConfiguredJobAndTrigger(CapturedOutput output) {
 		this.contextRunner.withUserConfiguration(QuartzFullConfiguration.class)
 				.withPropertyValues("test-name=withConfiguredJobAndTrigger").run((context) -> {
 					assertThat(context).hasSingleBean(Scheduler.class);
@@ -162,7 +175,7 @@ class QuartzAutoConfigurationTests {
 					assertThat(scheduler.getJobDetail(JobKey.jobKey("fooJob"))).isNotNull();
 					assertThat(scheduler.getTrigger(TriggerKey.triggerKey("fooTrigger"))).isNotNull();
 					Thread.sleep(1000L);
-					assertThat(capturedOutput).contains("withConfiguredJobAndTrigger").contains("jobDataValue");
+					assertThat(output).contains("withConfiguredJobAndTrigger").contains("jobDataValue");
 				});
 	}
 

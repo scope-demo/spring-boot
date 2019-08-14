@@ -28,12 +28,12 @@ import org.springframework.boot.web.embedded.jetty.JettyReactiveWebServerFactory
 import org.springframework.boot.web.embedded.jetty.JettyServerCustomizer;
 import org.springframework.boot.web.embedded.netty.NettyReactiveWebServerFactory;
 import org.springframework.boot.web.embedded.netty.NettyRouteProvider;
+import org.springframework.boot.web.embedded.netty.NettyServerCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatContextCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatProtocolHandlerCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatReactiveWebServerFactory;
 import org.springframework.boot.web.embedded.undertow.UndertowBuilderCustomizer;
-import org.springframework.boot.web.embedded.undertow.UndertowDeploymentInfoCustomizer;
 import org.springframework.boot.web.embedded.undertow.UndertowReactiveWebServerFactory;
 import org.springframework.boot.web.reactive.server.ReactiveWebServerFactory;
 import org.springframework.context.annotation.Bean;
@@ -66,10 +66,11 @@ abstract class ReactiveWebServerFactoryConfiguration {
 
 		@Bean
 		NettyReactiveWebServerFactory nettyReactiveWebServerFactory(ReactorResourceFactory resourceFactory,
-				ObjectProvider<NettyRouteProvider> routes) {
+				ObjectProvider<NettyRouteProvider> routes, ObjectProvider<NettyServerCustomizer> serverCustomizers) {
 			NettyReactiveWebServerFactory serverFactory = new NettyReactiveWebServerFactory();
 			serverFactory.setResourceFactory(resourceFactory);
 			routes.orderedStream().forEach((route) -> serverFactory.addRouteProviders(route));
+			serverFactory.getServerCustomizers().addAll(serverCustomizers.orderedStream().collect(Collectors.toList()));
 			return serverFactory;
 		}
 
@@ -126,11 +127,8 @@ abstract class ReactiveWebServerFactoryConfiguration {
 
 		@Bean
 		UndertowReactiveWebServerFactory undertowReactiveWebServerFactory(
-				ObjectProvider<UndertowDeploymentInfoCustomizer> deploymentInfoCustomizers,
 				ObjectProvider<UndertowBuilderCustomizer> builderCustomizers) {
 			UndertowReactiveWebServerFactory factory = new UndertowReactiveWebServerFactory();
-			factory.getDeploymentInfoCustomizers()
-					.addAll(deploymentInfoCustomizers.orderedStream().collect(Collectors.toList()));
 			factory.getBuilderCustomizers().addAll(builderCustomizers.orderedStream().collect(Collectors.toList()));
 			return factory;
 		}

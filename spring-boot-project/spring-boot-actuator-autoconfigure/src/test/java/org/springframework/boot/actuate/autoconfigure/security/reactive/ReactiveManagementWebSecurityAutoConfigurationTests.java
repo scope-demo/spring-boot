@@ -47,6 +47,7 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.WebFilterChainProxy;
@@ -163,9 +164,13 @@ class ReactiveManagementWebSecurityAutoConfigurationTests {
 	static class CustomSecurityConfiguration {
 
 		@Bean
-		SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-			return http.authorizeExchange().pathMatchers("/foo").permitAll().anyExchange().authenticated().and()
-					.formLogin().and().build();
+		SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) throws Exception {
+			http.authorizeExchange((exchanges) -> {
+				exchanges.pathMatchers("/foo").permitAll();
+				exchanges.anyExchange().authenticated();
+			});
+			http.formLogin(Customizer.withDefaults());
+			return http.build();
 		}
 
 	}
@@ -179,7 +184,7 @@ class ReactiveManagementWebSecurityAutoConfigurationTests {
 		}
 
 		@Bean
-		WebFilterChainProxy webFilterChainProxy(ServerHttpSecurity http) {
+		WebFilterChainProxy webFilterChainProxy(ServerHttpSecurity http) throws Exception {
 			return new WebFilterChainProxy(getFilterChains(http));
 		}
 
@@ -190,9 +195,10 @@ class ReactiveManagementWebSecurityAutoConfigurationTests {
 			return httpSecurity;
 		}
 
-		private List<SecurityWebFilterChain> getFilterChains(ServerHttpSecurity http) {
-			return Collections.singletonList(
-					http.authorizeExchange().anyExchange().authenticated().and().formLogin().and().build());
+		private List<SecurityWebFilterChain> getFilterChains(ServerHttpSecurity http) throws Exception {
+			http.authorizeExchange((exchanges) -> exchanges.anyExchange().authenticated());
+			http.formLogin(Customizer.withDefaults());
+			return Collections.singletonList(http.build());
 		}
 
 		static class TestServerHttpSecurity extends ServerHttpSecurity implements ApplicationContextAware {

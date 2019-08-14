@@ -49,7 +49,7 @@ class MockitoPostProcessorTests {
 		context.register(MultipleBeans.class);
 		assertThatIllegalStateException().isThrownBy(context::refresh)
 				.withMessageContaining("Unable to register mock bean " + ExampleService.class.getName()
-						+ " expected a single matching bean to replace " + "but found [example1, example2]");
+						+ " expected a single matching bean to replace but found [example1, example2]");
 	}
 
 	@Test
@@ -59,7 +59,7 @@ class MockitoPostProcessorTests {
 		context.register(MultipleQualifiedBeans.class);
 		assertThatIllegalStateException().isThrownBy(context::refresh)
 				.withMessageContaining("Unable to register mock bean " + ExampleService.class.getName()
-						+ " expected a single matching bean to replace " + "but found [example1, example3]");
+						+ " expected a single matching bean to replace but found [example1, example3]");
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class MockitoPostProcessorTests {
 		AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
 		MockitoPostProcessor.register(context);
 		RootBeanDefinition factoryBeanDefinition = new RootBeanDefinition(TestFactoryBean.class);
-		factoryBeanDefinition.setAttribute("factoryBeanObjectType", SomeInterface.class.getName());
+		factoryBeanDefinition.setAttribute(FactoryBean.OBJECT_TYPE_ATTRIBUTE, SomeInterface.class.getName());
 		context.registerBeanDefinition("beanToBeMocked", factoryBeanDefinition);
 		context.register(MockedFactoryBean.class);
 		context.refresh();

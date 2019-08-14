@@ -145,10 +145,11 @@ class DispatcherServletAutoConfigurationTests {
 	void dispatcherServletDefaultConfig() {
 		this.contextRunner.run((context) -> {
 			DispatcherServlet dispatcherServlet = context.getBean(DispatcherServlet.class);
-			assertThat(dispatcherServlet).extracting("throwExceptionIfNoHandlerFound").containsExactly(false);
-			assertThat(dispatcherServlet).extracting("dispatchOptionsRequest").containsExactly(true);
-			assertThat(dispatcherServlet).extracting("dispatchTraceRequest").containsExactly(false);
-			assertThat(dispatcherServlet).extracting("enableLoggingRequestDetails").containsExactly(false);
+			assertThat(dispatcherServlet).extracting("throwExceptionIfNoHandlerFound").isEqualTo(false);
+			assertThat(dispatcherServlet).extracting("dispatchOptionsRequest").isEqualTo(true);
+			assertThat(dispatcherServlet).extracting("dispatchTraceRequest").isEqualTo(false);
+			assertThat(dispatcherServlet).extracting("enableLoggingRequestDetails").isEqualTo(false);
+			assertThat(dispatcherServlet).extracting("publishEvents").isEqualTo(true);
 			assertThat(context.getBean("dispatcherServletRegistration")).hasFieldOrPropertyWithValue("loadOnStartup",
 					-1);
 		});
@@ -156,13 +157,16 @@ class DispatcherServletAutoConfigurationTests {
 
 	@Test
 	void dispatcherServletCustomConfig() {
-		this.contextRunner.withPropertyValues("spring.mvc.throw-exception-if-no-handler-found:true",
-				"spring.mvc.dispatch-options-request:false", "spring.mvc.dispatch-trace-request:true",
-				"spring.mvc.servlet.load-on-startup=5").run((context) -> {
+		this.contextRunner
+				.withPropertyValues("spring.mvc.throw-exception-if-no-handler-found:true",
+						"spring.mvc.dispatch-options-request:false", "spring.mvc.dispatch-trace-request:true",
+						"spring.mvc.publish-request-handled-events:false", "spring.mvc.servlet.load-on-startup=5")
+				.run((context) -> {
 					DispatcherServlet dispatcherServlet = context.getBean(DispatcherServlet.class);
-					assertThat(dispatcherServlet).extracting("throwExceptionIfNoHandlerFound").containsExactly(true);
-					assertThat(dispatcherServlet).extracting("dispatchOptionsRequest").containsExactly(false);
-					assertThat(dispatcherServlet).extracting("dispatchTraceRequest").containsExactly(true);
+					assertThat(dispatcherServlet).extracting("throwExceptionIfNoHandlerFound").isEqualTo(true);
+					assertThat(dispatcherServlet).extracting("dispatchOptionsRequest").isEqualTo(false);
+					assertThat(dispatcherServlet).extracting("dispatchTraceRequest").isEqualTo(true);
+					assertThat(dispatcherServlet).extracting("publishEvents").isEqualTo(false);
 					assertThat(context.getBean("dispatcherServletRegistration"))
 							.hasFieldOrPropertyWithValue("loadOnStartup", 5);
 				});

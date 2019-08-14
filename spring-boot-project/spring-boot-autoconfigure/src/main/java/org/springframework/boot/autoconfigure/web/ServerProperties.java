@@ -61,6 +61,7 @@ import org.springframework.util.unit.DataSize;
  * @author Artsiom Yudovin
  * @author Andrew McGhie
  * @author Rafiullah Hamedy
+ * @author Dirk Deyne
  * @since 1.0.0
  */
 @ConfigurationProperties(prefix = "server", ignoreUnknownFields = true)
@@ -295,7 +296,7 @@ public class ServerProperties {
 				+ "169\\.254\\.\\d{1,3}\\.\\d{1,3}|" // 169.254/16
 				+ "127\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|" // 127/8
 				+ "172\\.1[6-9]{1}\\.\\d{1,3}\\.\\d{1,3}|" // 172.16/12
-				+ "172\\.2[0-9]{1}\\.\\d{1,3}\\.\\d{1,3}|" + "172\\.3[0-1]{1}\\.\\d{1,3}\\.\\d{1,3}|" //
+				+ "172\\.2[0-9]{1}\\.\\d{1,3}\\.\\d{1,3}|172\\.3[0-1]{1}\\.\\d{1,3}\\.\\d{1,3}|" //
 				+ "0:0:0:0:0:0:0:1|::1";
 
 		/**
@@ -394,6 +395,18 @@ public class ServerProperties {
 		 * match one and only one character and zero or more characters respectively.
 		 */
 		private List<String> additionalTldSkipPatterns = new ArrayList<>();
+
+		/**
+		 * Comma-separated list of additional unencoded characters that should be allowed
+		 * in URI paths. Only "< > [ \ ] ^ ` { | }" are allowed.
+		 */
+		private List<Character> relaxedPathChars = new ArrayList<>();
+
+		/**
+		 * Comma-separated list of additional unencoded characters that should be allowed
+		 * in URI query strings. Only "< > [ \ ] ^ ` { | }" are allowed.
+		 */
+		private List<Character> relaxedQueryChars = new ArrayList<>();
 
 		/**
 		 * Static resource configuration.
@@ -551,6 +564,22 @@ public class ServerProperties {
 
 		public void setAdditionalTldSkipPatterns(List<String> additionalTldSkipPatterns) {
 			this.additionalTldSkipPatterns = additionalTldSkipPatterns;
+		}
+
+		public List<Character> getRelaxedPathChars() {
+			return this.relaxedPathChars;
+		}
+
+		public void setRelaxedPathChars(List<Character> relaxedPathChars) {
+			this.relaxedPathChars = relaxedPathChars;
+		}
+
+		public List<Character> getRelaxedQueryChars() {
+			return this.relaxedQueryChars;
+		}
+
+		public void setRelaxedQueryChars(List<Character> relaxedQueryChars) {
+			this.relaxedQueryChars = relaxedQueryChars;
 		}
 
 		public Resource getResource() {
