@@ -1775,6 +1775,11 @@ To help with the customization, some other properties are transferred from the S
 | The format to use when rendering the log level (default `%5p`).
   (Only supported with the default Logback setup.)
 
+| `logging.pattern.rolling-file-name`
+| `ROLLING_FILE_NAME_PATTERN`
+| Pattern for rolled-over log file names (default `$\{LOG_FILE}.%d\{yyyy-MM-dd}.%i.gz`).
+  (Only supported with the default Logback setup.)
+
 | `PID`
 | `PID`
 | The current process ID (discovered if possible and when not already defined as an OS environment variable).
@@ -3740,7 +3745,7 @@ Spring Data provides additional projects that help you access a variety of NoSQL
 * {spring-data-elasticsearch}[Elasticsearch]
 * {spring-data-solr}[Solr]
 * {spring-data-redis}[Redis]
-* {spring-data-gemfire}[Gemfire] or {spring-data-geode}[Geode]
+* {spring-data-gemfire}[GemFire] or {spring-data-geode}[Geode]
 * {spring-data-cassandra}[Cassandra]
 * {spring-data-couchbase}[Couchbase]
 * {spring-data-ldap}[LDAP]
@@ -3984,7 +3989,7 @@ You can configure the uri and credentials to use by setting the `spring.data.neo
 	spring.data.neo4j.password=secret
 ----
 
-You can take full control over the session creation by either adding a `org.neo4j.ogm.config.Configuration` bean or a `org.neo4j.ogm.session.SessionFactory` bean.
+You can take full control over the session creation by adding either an `org.neo4j.ogm.config.Configuration` bean or an `org.neo4j.ogm.session.SessionFactory` bean.
 
 
 
