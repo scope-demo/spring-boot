@@ -1,5 +1,5 @@
-version: "1"
-rules:
-    - base: master
-      upstream: spring-projects:master
-      mergeMethod: rebase
+#version: "1"
+#rules:
+#    - base: master
+#      upstream: spring-projects:master
+#      mergeMethod: rebase
