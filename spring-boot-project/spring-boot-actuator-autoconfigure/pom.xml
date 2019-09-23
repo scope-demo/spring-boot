@@ -648,7 +648,7 @@
 									<goal>wget</goal>
 								</goals>
 								<configuration>
-									<url>https://repo.spring.io/release/io/spring/docresources/spring-doc-resources/${spring-doc-resources.version}/spring-doc-resources-${spring-doc-resources.version}.zip</url>
+									<url>${spring-doc-resources.url}</url>
 									<unpack>true</unpack>
 									<outputDirectory>${refdocs.build.directory}</outputDirectory>
 								</configuration>
@@ -799,7 +799,7 @@
 							<dependency>
 								<groupId>org.asciidoctor</groupId>
 								<artifactId>asciidoctorj-pdf</artifactId>
-								<version>1.5.0-alpha.11</version>
+								<version>1.5.0-alpha.18</version>
 							</dependency>
 						</dependencies>
 					</plugin>

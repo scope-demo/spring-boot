@@ -28,7 +28,8 @@
 		<spock.version>1.0-groovy-2.4</spock.version>
 		<testcontainers.version>1.12.0</testcontainers.version>
 		<testng.version>6.14.3</testng.version>
-		<spring-doc-resources.version>0.1.2.RELEASE</spring-doc-resources.version>
+		<spring-doc-resources.version>0.1.3.BUILD-SNAPSHOT</spring-doc-resources.version>
+		<spring-doc-resources.url>https://repo.spring.io/snapshot/io/spring/docresources/spring-doc-resources/${spring-doc-resources.version}/spring-doc-resources-${spring-doc-resources.version}.zip</spring-doc-resources.url>
 	</properties>
 	<scm>
 		<url>https://github.com/spring-projects/spring-boot</url>
@@ -293,17 +294,12 @@
 				<plugin>
 					<groupId>org.asciidoctor</groupId>
 					<artifactId>asciidoctor-maven-plugin</artifactId>
-					<version>1.5.7.1</version>
+					<version>1.6.0</version>
 					<dependencies>
 						<dependency>
 							<groupId>org.asciidoctor</groupId>
-							<artifactId>asciidoctorj</artifactId>
-							<version>1.5.8</version>
-						</dependency>
-						<dependency>
-							<groupId>org.asciidoctor</groupId>
 							<artifactId>asciidoctorj-pdf</artifactId>
-							<version>1.5.0-alpha.11</version>
+							<version>1.5.0-alpha.18</version>
 						</dependency>
 					</dependencies>
 				</plugin>

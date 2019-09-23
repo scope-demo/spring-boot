@@ -805,7 +805,7 @@ If you need to _completely_ disable restart support (for example, because it doe
 If you work with an IDE that continuously compiles changed files, you might prefer to trigger restarts only at specific times.
 To do so, you can use a "`trigger file`", which is a special file that must be modified when you want to actually trigger a restart check.
 
-NOTE: Any update to the file file will trigger a check, but restart only actually occurs if Devtools has detected it has something to do.
+NOTE: Any update to the file will trigger a check, but restart only actually occurs if Devtools has detected it has something to do.
 
 To use a trigger file, set the `spring.devtools.restart.trigger-file` property to the name (excluding any path) of your trigger file.
 The trigger file must appear somewhere on your classpath.
@@ -891,16 +891,16 @@ If you start multiple applications from your IDE, only the first has LiveReload 
 
 [[using-boot-devtools-globalsettings]]
 === Global Settings
-You can configure global devtools settings by adding any of the following files to the `$HOME/.config/spring-boot` folder (note that the filenames startswith "`.`"):
+You can configure global devtools settings by adding any of the following files to the `$HOME/.config/spring-boot` folder:
 
-. `.spring-boot-devtools.properties`
-. `.spring-boot-devtools.yaml`
-. `.spring-boot-devtools.yml`
+. `spring-boot-devtools.properties`
+. `spring-boot-devtools.yaml`
+. `spring-boot-devtools.yml`
 
 Any properties added to these file apply to _all_ Spring Boot applications on your machine that use devtools.
 For example, to configure restart to always use a <<using-boot-devtools-restart-triggerfile, trigger file>>, you would add the following property:
 
-.~/config/spring-boot/.spring-boot-devtools.properties
+.~/config/spring-boot/spring-boot-devtools.properties
 [source,properties,indent=0]
 ----
 	spring.devtools.reload.trigger-file=.reloadtrigger

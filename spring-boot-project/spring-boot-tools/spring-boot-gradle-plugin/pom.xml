@@ -50,7 +50,7 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://repo.spring.io/release/io/spring/docresources/spring-doc-resources/${spring-doc-resources.version}/spring-doc-resources-${spring-doc-resources.version}.zip</url>
+							<url>${spring-doc-resources.url}</url>
 							<unpack>true</unpack>
 							<outputDirectory>${refdocs.build.directory}/asciidoc</outputDirectory>
 						</configuration>
@@ -360,7 +360,7 @@
 							<dependency>
 								<groupId>io.spring.asciidoctor</groupId>
 								<artifactId>spring-asciidoctor-extensions</artifactId>
-								<version>0.1.3.RELEASE</version>
+								<version>0.2.0.RELEASE</version>
 							</dependency>
 						</dependencies>
 					</plugin>
